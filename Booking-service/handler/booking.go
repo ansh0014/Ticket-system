@@ -23,10 +23,10 @@ func CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
     
-    // Calculate expiry time in seconds
+    
     expiresIn := int(booking.ExpiryTime.Sub(booking.BookingTime).Seconds())
     
-    // TODO: Generate payment URL (call Payment Service)
+    // TODO payment URL (call Payment gateway)
     paymentURL := "http://payment-service/pay/" + booking.ID
     
     response := model.BookingResponse{
