@@ -26,16 +26,20 @@ func InitRedis() {
 }
 
 func InitMongo() error {
-	client, err := mongo.NewClient(options.Client().ApplyURI(os.Getenv("MONGODB_URI")))
-	if err != nil {
-		return err
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := client.Connect(ctx); err != nil {
-		return err
-	}
-	MongoClient = client
-	MongoDB = client.Database(os.Getenv("MONGODB_DATABASE"))
-	return nil
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    client, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGODB_URI")))
+    if err != nil {
+        return err
+    }
+
+    // Verify connection
+    if err := client.Ping(ctx, nil); err != nil {
+        return err
+    }
+
+    MongoClient = client
+    MongoDB = client.Database(os.Getenv("MONGODB_DATABASE"))
+    return nil
 }
