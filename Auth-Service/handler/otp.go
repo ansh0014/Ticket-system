@@ -44,7 +44,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to store OTP", http.StatusInternalServerError)
 		return
 	}
-	service.SendOTPEmail(req.Email, otp)
+	service.SendOTP(req.Email, otp)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OTP sent to email"))
 }
