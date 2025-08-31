@@ -17,12 +17,18 @@ var (
     Ctx         = context.Background()
 )
 
-func InitRedis() {
-    RedisClient = redis.NewClient(&redis.Options{
-        Addr:     os.Getenv("REDIS_URL"),
-        Password: "", // no password set
-        DB:       0,  // use default DB
-    })
+func InitRedis() error {
+    // Parse Redis URL which includes all connection information
+    opt, err := redis.ParseURL(os.Getenv("REDIS_URL"))
+    if err != nil {
+        return err
+    }
+    
+    RedisClient = redis.NewClient(opt)
+    
+    // Ping Redis to verify connection
+    _, err = RedisClient.Ping(Ctx).Result()
+    return err
 }
 
 func InitMongo() error {
