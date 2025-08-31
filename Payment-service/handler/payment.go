@@ -27,7 +27,7 @@ func CreatePaymentHandler(w http.ResponseWriter, r *http.Request) {
     response := model.PaymentResponse{
         Payment:     *payment,
         RedirectURL: payment.PaymentURL,
-        ExpiresIn:   1800, // 30 minutes
+        ExpiresIn:  1000, // 1000 seconds
     }
 
     utils.CreatedResponse(w, "Payment created successfully", response)
