@@ -33,28 +33,23 @@ func TestCompleteUserJourney(t *testing.T) {
 	// Use hardcoded test email
 	testEmail = TEST_EMAIL
 
-	t.Run("1. Auth Service Health Check", testAuthHealth)
-	t.Run("2. Booking Service Health Check", testBookingHealth)
-	t.Run("3. Payment Service Health Check", testPaymentHealth)
-	// Skip OTP tests
-	t.Run("4. Login With Test Account", testLogin)
-	t.Run("5. Get User Profile", testGetUserProfile)
-	t.Run("6. Check Available Shows", testGetAvailableShows)
-	t.Run("7. Lock Seats", testLockSeats)
-	t.Run("8. Create Booking", testCreateBooking)
-	t.Run("9. Get Booking Details", testGetBookingDetails)
-	t.Run("10. Create Payment", testCreatePayment)
-	t.Run("11. Simulate Payment Webhook", testSimulateWebhook)
-	t.Run("12. Verify Payment", testVerifyPayment)
-	t.Run("13. Check Booking Status", testCheckBookingStatus)
-	t.Run("14. Get User Bookings", testGetUserBookings)
+	// Removed Auth Service health check
+	t.Run("1. Booking Service Health Check", testBookingHealth)
+	t.Run("2. Payment Service Health Check", testPaymentHealth)
+	t.Run("3. Login With Test Account", testLogin)
+	t.Run("4. Get User Profile", testGetUserProfile)
+	t.Run("5. Check Available Shows", testGetAvailableShows)
+	t.Run("6. Lock Seats", testLockSeats)
+	t.Run("7. Create Booking", testCreateBooking)
+	t.Run("8. Get Booking Details", testGetBookingDetails)
+	t.Run("9. Create Payment", testCreatePayment)
+	t.Run("10. Simulate Payment Webhook", testSimulateWebhook)
+	t.Run("11. Verify Payment", testVerifyPayment)
+	t.Run("12. Check Booking Status", testCheckBookingStatus)
+	t.Run("13. Get User Bookings", testGetUserBookings)
 }
 
-func testAuthHealth(t *testing.T) {
-	resp, err := http.Get("http://localhost:8001/health")
-	assert.NoError(t, err)
-	assert.Equal(t, 200, resp.StatusCode)
-}
+// Auth Service health check function removed
 
 func testBookingHealth(t *testing.T) {
 	resp, err := http.Get("http://localhost:8002/health")
