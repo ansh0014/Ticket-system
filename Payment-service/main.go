@@ -12,7 +12,7 @@ import (
 
 func main() {
     // Load environment variables
-    godotenv.Load()
+    godotenv.Load("D:\\Ticket-System\\Ticket-system\\Payment-service\\.env")
 
     // Initialize MongoDB
     if err := config.InitMongo(); err != nil {

@@ -12,8 +12,8 @@ import (
 
 func main() {
     // Load environment variables
-    godotenv.Load()
-    
+    godotenv.Load("D:\\Ticket-System\\Ticket-system\\Booking-service\\.env")
+
     // Initialize Redis
     config.InitRedis()
     log.Println("Redis initialized")

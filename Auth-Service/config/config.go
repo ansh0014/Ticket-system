@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"time"
+	"fmt"
 
 	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -34,7 +35,14 @@ func InitMongo() error {
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
 
-    client, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGODB_URI")))
+    mongoURI := os.Getenv("MONGODB_URI")
+    fmt.Println("MongoDB URI:", mongoURI) // Debug print
+    
+    if mongoURI == "" {
+        return fmt.Errorf("MONGODB_URI environment variable is not set")
+    }
+
+    client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
     if err != nil {
         return err
     }
@@ -44,7 +52,14 @@ func InitMongo() error {
         return err
     }
 
+    dbName := os.Getenv("MONGODB_DATABASE")
+    fmt.Println("MongoDB Database:", dbName) // Debug print
+    
+    if dbName == "" {
+        dbName = "authdb" // Default fallback
+    }
+
     MongoClient = client
-    MongoDB = client.Database(os.Getenv("MONGODB_DATABASE"))
+    MongoDB = client.Database(dbName)
     return nil
 }
