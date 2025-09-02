@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -81,7 +81,7 @@ func testLogin(t *testing.T) {
 	)
 
 	// Read and log response for debugging
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
 	t.Logf("Login response: %s", body)
 
@@ -223,7 +223,7 @@ func testCreateBooking(t *testing.T) {
 
 	// Parse booking ID if successful
 	if err == nil && (resp.StatusCode == 200 || resp.StatusCode == 201) {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		defer resp.Body.Close()
 
 		var result map[string]interface{}
@@ -291,7 +291,7 @@ func testCreatePayment(t *testing.T) {
 
 	// Parse payment ID if successful
 	if resp.StatusCode == 200 || resp.StatusCode == 201 {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		defer resp.Body.Close()
 
 		var result map[string]interface{}

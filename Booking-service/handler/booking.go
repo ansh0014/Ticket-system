@@ -1,113 +1,170 @@
 package handler
 
 import (
-    "encoding/json"
-    "net/http"
+	"encoding/json"
+	"net/http"
+	"strconv"
 
-    "github.com/ansh0014/booking/model"
-    "github.com/ansh0014/booking/service"
-    "github.com/gorilla/mux"
+	"github.com/ansh0014/booking/model"
+	"github.com/ansh0014/booking/service"
+	"github.com/ansh0014/booking/utils"
+	"github.com/gorilla/mux"
 )
 
-// CreateBookingHandler handles booking creation
+// CreateBookingHandler creates a new booking
 func CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
-    var req model.CreateBookingRequest
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        http.Error(w, "Invalid request", http.StatusBadRequest)
-        return
-    }
-    
-    booking, err := service.CreateBooking(&req)
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
-        return
-    }
-    
-    
-    expiresIn := int(booking.ExpiryTime.Sub(booking.BookingTime).Seconds())
-    
-    // TODO payment URL (call Payment gateway)
-    paymentURL := "http://payment-service/pay/" + booking.ID
-    
-    response := model.BookingResponse{
-        Booking:    *booking,
-        PaymentURL: paymentURL,
-        ExpiresIn:  expiresIn,
-    }
-    
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(response)
+	var req model.CreateBookingRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Validate platform
+	if req.Platform == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Platform is required")
+		return
+	}
+
+	// Validate platform ID
+	if req.PlatformID == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Platform ID is required")
+		return
+	}
+
+	// Validate seats
+	if len(req.SeatIDs) == 0 {
+		utils.RespondWithError(w, http.StatusBadRequest, "At least one seat must be selected")
+		return
+	}
+
+	// Get user ID from context
+	userID := r.Context().Value("userID").(string)
+
+	// Get booking service
+	bookingService := r.Context().Value("bookingService").(*service.BookingService)
+
+	// Create booking
+	booking, err := bookingService.CreateBooking(r.Context(), req, userID)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Return the created booking
+	utils.RespondWithJSON(w, http.StatusCreated, map[string]interface{}{
+		"success": true,
+		"message": "Booking created successfully",
+		"data": map[string]interface{}{
+			"booking": booking,
+		},
+	})
 }
 
-// GetBookingHandler retrieves booking details
+// GetBookingHandler retrieves a booking by ID
 func GetBookingHandler(w http.ResponseWriter, r *http.Request) {
-    vars := mux.Vars(r)
-    bookingID := vars["id"]
-    
-    booking, err := service.GetBooking(bookingID)
-    if err != nil {
-        http.Error(w, "Booking not found", http.StatusNotFound)
-        return
-    }
-    
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(booking)
+	vars := mux.Vars(r)
+	bookingID := vars["id"]
+
+	// Get user ID from context
+	userID := r.Context().Value("userID").(string)
+
+	// Get booking service
+	bookingService := r.Context().Value("bookingService").(*service.BookingService)
+
+	// Get booking
+	booking, err := bookingService.GetBooking(r.Context(), bookingID)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusNotFound, "Booking not found")
+		return
+	}
+
+	// Check if the booking belongs to the user
+	if booking.UserID != userID {
+		utils.RespondWithError(w, http.StatusForbidden, "You don't have permission to access this booking")
+		return
+	}
+
+	// Return the booking
+	utils.RespondWithJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"data": map[string]interface{}{
+			"booking": booking,
+		},
+	})
+}
+
+// GetUserBookingsHandler retrieves all bookings for a user
+func GetUserBookingsHandler(w http.ResponseWriter, r *http.Request) {
+	// Get user ID from context
+	userID := r.Context().Value("userID").(string)
+
+	// Parse query parameters
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	pageSize, _ := strconv.Atoi(r.URL.Query().Get("page_size"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+
+	// Get booking service
+	bookingService := r.Context().Value("bookingService").(*service.BookingService)
+
+	// Get user's bookings
+	bookings, total, err := bookingService.GetUserBookings(r.Context(), userID, page, pageSize)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to get bookings: "+err.Error())
+		return
+	}
+
+	// Return the bookings
+	utils.RespondWithJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"data": map[string]interface{}{
+			"bookings": bookings,
+			"count":    len(bookings),
+			"total":    total,
+			"page":     page,
+		},
+	})
 }
 
 // CancelBookingHandler cancels a booking
 func CancelBookingHandler(w http.ResponseWriter, r *http.Request) {
-    vars := mux.Vars(r)
-    bookingID := vars["id"]
-    
-    err := service.CancelBooking(bookingID)
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
-        return
-    }
-    
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]string{
-        "message": "Booking cancelled successfully",
-    })
-}
+	vars := mux.Vars(r)
+	bookingID := vars["id"]
 
-// GetUserBookingsHandler gets all bookings for a user
-func GetUserBookingsHandler(w http.ResponseWriter, r *http.Request) {
-    vars := mux.Vars(r)
-    userID := vars["userId"]
-    
-    bookings, err := service.GetUserBookings(userID)
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
-    
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(bookings)
-}
+	// Get user ID from context
+	userID := r.Context().Value("userID").(string)
 
-// ConfirmBookingHandler confirms a booking after payment
-func ConfirmBookingHandler(w http.ResponseWriter, r *http.Request) {
-    vars := mux.Vars(r)
-    bookingID := vars["id"]
-    
-    var req struct {
-        PaymentID string `json:"payment_id"`
-    }
-    
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        http.Error(w, "Invalid request", http.StatusBadRequest)
-        return
-    }
-    
-    err := service.ConfirmBooking(bookingID, req.PaymentID)
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
-        return
-    }
-    
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]string{
-        "message": "Booking confirmed successfully",
-    })
+	// Get booking service
+	bookingService := r.Context().Value("bookingService").(*service.BookingService)
+
+	// Get booking first to check ownership
+	booking, err := bookingService.GetBooking(r.Context(), bookingID)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusNotFound, "Booking not found")
+		return
+	}
+
+	// Check if the booking belongs to the user
+	if booking.UserID != userID {
+		utils.RespondWithError(w, http.StatusForbidden, "You don't have permission to cancel this booking")
+		return
+	}
+
+	// Cancel the booking
+	err = bookingService.CancelBooking(r.Context(), bookingID)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to cancel booking: "+err.Error())
+		return
+	}
+
+	// Return success
+	utils.RespondWithJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"message": "Booking cancelled successfully",
+	})
 }
