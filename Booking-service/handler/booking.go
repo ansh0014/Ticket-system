@@ -3,17 +3,17 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
+
+	"github.com/gorilla/mux"
 
 	"github.com/ansh0014/booking/model"
 	"github.com/ansh0014/booking/service"
 	"github.com/ansh0014/booking/utils"
-	"github.com/gorilla/mux"
 )
 
 // CreateBookingHandler creates a new booking
 func CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
-	var req model.CreateBookingRequest
+	var req model.BookingRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, "Invalid request body")
@@ -39,7 +39,11 @@ func CreateBookingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user ID from context
-	userID := r.Context().Value("userID").(string)
+	userID, err := utils.GetUserFromContext(r.Context())
+	if err != nil {
+		utils.UnauthorizedResponse(w, "User not authenticated")
+		return
+	}
 
 	// Get booking service
 	bookingService := r.Context().Value("bookingService").(*service.BookingService)
@@ -67,7 +71,11 @@ func GetBookingHandler(w http.ResponseWriter, r *http.Request) {
 	bookingID := vars["id"]
 
 	// Get user ID from context
-	userID := r.Context().Value("userID").(string)
+	userID, err := utils.GetUserFromContext(r.Context())
+	if err != nil {
+		utils.UnauthorizedResponse(w, "User not authenticated")
+		return
+	}
 
 	// Get booking service
 	bookingService := r.Context().Value("bookingService").(*service.BookingService)
@@ -97,17 +105,14 @@ func GetBookingHandler(w http.ResponseWriter, r *http.Request) {
 // GetUserBookingsHandler retrieves all bookings for a user
 func GetUserBookingsHandler(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from context
-	userID := r.Context().Value("userID").(string)
+	userID, err := utils.GetUserFromContext(r.Context())
+	if err != nil {
+		utils.UnauthorizedResponse(w, "User not authenticated")
+		return
+	}
 
 	// Parse query parameters
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	pageSize, _ := strconv.Atoi(r.URL.Query().Get("page_size"))
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 {
-		pageSize = 10
-	}
+	page, pageSize := utils.GetPageParams(r)
 
 	// Get booking service
 	bookingService := r.Context().Value("bookingService").(*service.BookingService)
@@ -115,7 +120,7 @@ func GetUserBookingsHandler(w http.ResponseWriter, r *http.Request) {
 	// Get user's bookings
 	bookings, total, err := bookingService.GetUserBookings(r.Context(), userID, page, pageSize)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to get bookings: "+err.Error())
+		utils.ServerErrorResponse(w, "Failed to get bookings: "+err.Error())
 		return
 	}
 
@@ -137,7 +142,11 @@ func CancelBookingHandler(w http.ResponseWriter, r *http.Request) {
 	bookingID := vars["id"]
 
 	// Get user ID from context
-	userID := r.Context().Value("userID").(string)
+	userID, err := utils.GetUserFromContext(r.Context())
+	if err != nil {
+		utils.UnauthorizedResponse(w, "User not authenticated")
+		return
+	}
 
 	// Get booking service
 	bookingService := r.Context().Value("bookingService").(*service.BookingService)
@@ -158,7 +167,7 @@ func CancelBookingHandler(w http.ResponseWriter, r *http.Request) {
 	// Cancel the booking
 	err = bookingService.CancelBooking(r.Context(), bookingID)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to cancel booking: "+err.Error())
+		utils.ServerErrorResponse(w, "Failed to cancel booking: "+err.Error())
 		return
 	}
 

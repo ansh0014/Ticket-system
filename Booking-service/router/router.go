@@ -1,11 +1,10 @@
 package router
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/ansh0014/booking/handler"
-	// "github.com/ansh0014/booking/utils"
+	"github.com/ansh0014/booking/middleware"
 	"github.com/gorilla/mux"
 )
 
@@ -13,22 +12,12 @@ import (
 func SetupRoutes(platformServices map[string]interface{}) http.Handler {
 	r := mux.NewRouter()
 
-	// Middleware to inject platform services
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// Add all platform services to the request context
-			ctx := req.Context()
-			for name, service := range platformServices {
-				ctx = context.WithValue(ctx, name+"Service", service)
-			}
-			next.ServeHTTP(w, req.WithContext(ctx))
-		})
-	})
-
-	// // Apply global middlewares
-	// r.Use(utils.LoggingMiddleware)
-	// r.Use(utils.RecoverMiddleware)
-	// r.Use(utils.CORSMiddleware)
+	// Apply global middlewares
+	r.Use(middleware.RecoverMiddleware)
+	r.Use(middleware.LoggingMiddleware)
+	r.Use(middleware.CORSMiddleware)
+	r.Use(middleware.AuthMiddleware)
+	r.Use(middleware.ServiceInjector(platformServices))
 
 	// Health check
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

@@ -89,6 +89,9 @@ func initPlatformServices() map[string]interface{} {
 		"movie":   movieService,
 	})
 
+	// Set up circular reference
+	bookingService.SetSeatService(seatService)
+
 	// Return all services in a map
 	return map[string]interface{}{
 		"flight":  flightService,

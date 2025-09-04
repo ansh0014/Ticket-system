@@ -38,13 +38,17 @@ func LockSeatsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user ID from context
-	userID := r.Context().Value("userID").(string)
+	userID, err := utils.GetUserFromContext(r.Context())
+	if err != nil {
+		utils.UnauthorizedResponse(w, "User not authenticated")
+		return
+	}
 
 	// Get seat service
 	seatService := r.Context().Value("seatService").(*service.SeatService)
 
 	// Lock seats
-	err := seatService.LockSeats(r.Context(), req, userID)
+	err = seatService.LockSeats(r.Context(), req, userID)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusBadRequest, err.Error())
 		return
@@ -66,14 +70,18 @@ func LockSeatsHandler(w http.ResponseWriter, r *http.Request) {
 // GetAvailabilityHandler checks availability for a show
 func GetAvailabilityHandler(w http.ResponseWriter, r *http.Request) {
 	var req model.AvailabilityRequest
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	seatStatus, err := service.GetAvailability(req.ShowID)
+	// Get seat service
+	seatService := r.Context().Value("seatService").(*service.SeatService)
+
+	seatStatus, err := seatService.GetAvailability(r.Context(), req.ShowID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to get availability: "+err.Error())
 		return
 	}
 
@@ -84,10 +92,11 @@ func GetAvailabilityHandler(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: Get full seat list from Venue service
 	// For now, we'll just categorize the ones in Redis
-
 	for seatID, userID := range seatStatus {
 		if userID != "" {
 			locked = append(locked, seatID)
+		} else {
+			available = append(available, seatID)
 		}
 	}
 
@@ -99,6 +108,64 @@ func GetAvailabilityHandler(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: time.Now(),
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	utils.RespondWithJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"data":    response,
+	})
+}
+
+// ReleaseSeatsHandler releases locked seats
+func ReleaseSeatsHandler(w http.ResponseWriter, r *http.Request) {
+	var req model.SeatLockRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Validate platform
+	if req.Platform == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Platform is required")
+		return
+	}
+
+	// Validate platform ID
+	if req.PlatformID == "" {
+		utils.RespondWithError(w, http.StatusBadRequest, "Platform ID is required")
+		return
+	}
+
+	// Validate seats
+	if len(req.SeatIDs) == 0 {
+		utils.RespondWithError(w, http.StatusBadRequest, "At least one seat must be selected")
+		return
+	}
+
+	// Get user ID from context
+	userID, err := utils.GetUserFromContext(r.Context())
+	if err != nil {
+		utils.UnauthorizedResponse(w, "User not authenticated")
+		return
+	}
+
+	// Get seat service
+	seatService := r.Context().Value("seatService").(*service.SeatService)
+
+	// Release seats
+	err = seatService.ReleaseSeats(r.Context(), req, userID)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Return success
+	utils.RespondWithJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"message": "Seats released successfully",
+		"data": map[string]interface{}{
+			"platform":    req.Platform,
+			"platform_id": req.PlatformID,
+			"seat_ids":    req.SeatIDs,
+		},
+	})
 }

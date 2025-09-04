@@ -35,7 +35,7 @@ func GetMoviesHandler(w http.ResponseWriter, r *http.Request) {
 		"total":       total,
 		"page":        page,
 		"page_size":   pageSize,
-		"total_pages": (total + pageSize - 1) / pageSize,
+		"total_pages": (int(total) + pageSize - 1) / pageSize,
 	}
 
 	utils.RespondWithJSON(w, http.StatusOK, map[string]interface{}{
@@ -77,7 +77,7 @@ func SearchMoviesHandler(w http.ResponseWriter, r *http.Request) {
 		"total":       total,
 		"page":        page,
 		"page_size":   pageSize,
-		"total_pages": (total + pageSize - 1) / pageSize,
+		"total_pages": (int(total) + pageSize - 1) / pageSize,
 	}
 
 	utils.RespondWithJSON(w, http.StatusOK, map[string]interface{}{

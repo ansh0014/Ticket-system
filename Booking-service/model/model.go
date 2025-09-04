@@ -23,11 +23,10 @@ type Seat struct {
 	ShowID   string  `json:"show_id" bson:"show_id"`
 	Row      string  `json:"row" bson:"row"`
 	Number   int     `json:"number" bson:"number"`
-	Category string  `json:"category" bson:"category"` 
+	Category string  `json:"category" bson:"category"`
 	Price    float64 `json:"price" bson:"price"`
-	Status   string  `json:"status" bson:"status"` 
+	Status   string  `json:"status" bson:"status"`
 }
-
 
 type CreateBookingRequest struct {
 	UserID string   `json:"user_id" validate:"required"`
@@ -35,17 +34,31 @@ type CreateBookingRequest struct {
 	Seats  []string `json:"seats" validate:"required,min=1"`
 }
 
+type BookingRequest struct {
+	Platform    string   `json:"platform" validate:"required"`
+	PlatformID  string   `json:"platform_id" validate:"required"`
+	SeatIDs     []string `json:"seat_ids" validate:"required,min=1"`
+	UserID      string   `json:"user_id,omitempty"`
+	PaymentType string   `json:"payment_type,omitempty"`
+}
+
 type BookingResponse struct {
 	Booking    Booking `json:"booking"`
 	PaymentURL string  `json:"payment_url,omitempty"`
-	ExpiresIn  int     `json:"expires_in,omitempty"` 
+	ExpiresIn  int     `json:"expires_in,omitempty"`
 }
 
 type LockSeatsRequest struct {
 	ShowID   string   `json:"show_id" validate:"required"`
 	Seats    []string `json:"seats" validate:"required,min=1"`
 	UserID   string   `json:"user_id" validate:"required"`
-	Duration int      `json:"duration,omitempty"` 
+	Duration int      `json:"duration,omitempty"`
+}
+
+type SeatLockRequest struct {
+	Platform   string   `json:"platform" validate:"required"`
+	PlatformID string   `json:"platform_id" validate:"required"`
+	SeatIDs    []string `json:"seat_ids" validate:"required,min=1"`
 }
 
 type AvailabilityRequest struct {
