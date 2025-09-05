@@ -1,0 +1,47 @@
+# API Gateway example environment variables
+# Copy to .env and update values for your environment
+
+# Upstream service URLs (use docker-compose service names when running containers)
+AUTH_SERVICE_URL=http://localhost:8001
+BOOKING_SERVICE_URL=http://localhost:8002
+PAYMENT_SERVICE_URL=http://localhost:8003
+VENUE_SERVICE_URL=http://localhost:8004
+
+# JWT secret used by gateway to optionally parse tokens (optional if using introspection)
+JWT_SECRET=change_this_secret
+
+# Gateway settings
+GATEWAY_PORT=8080
+GATEWAY_READ_TIMEOUT=15    # seconds
+GATEWAY_WRITE_TIMEOUT=20   # seconds
+GATEWAY_IDLE_TIMEOUT=60    # seconds
+
+# Logging
+LOG_LEVEL=info
+
+# Optional: enable request tracing / debug
+TRACE_ENABLED=false
+```// filepath: d:\Ticket-System\Ticket-system\api-gateway\.env.example
+# API Gateway example environment variables
+# Copy to .env and update values for your environment
+
+# Upstream service URLs (use docker-compose service names when running containers)
+AUTH_SERVICE_URL=http://localhost:8001
+BOOKING_SERVICE_URL=http://localhost:8002
+PAYMENT_SERVICE_URL=http://localhost:8003
+VENUE_SERVICE_URL=http://localhost:8003
+
+# JWT secret used by gateway to optionally parse tokens (optional if using introspection)
+JWT_SECRET=change_this_secret
+
+# Gateway settings
+GATEWAY_PORT=8080
+GATEWAY_READ_TIMEOUT=15    # seconds
+GATEWAY_WRITE_TIMEOUT=20   # seconds
+GATEWAY_IDLE_TIMEOUT=60    # seconds
+
+# Logging
+LOG_LEVEL=info
+
+# Optional: enable request tracing / debug
+TRACE_ENABLED
